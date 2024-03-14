@@ -1,0 +1,136 @@
+verbose: True
+
+vector_storage:
+  directory: ./db
+  default_vector_store: genshin_final
+  # Size of chunk. Basically, split document into '$chunk_size'-tokens slices.
+  # Only when indexing NEW (!) documents
+  # 500 ~= paragraph
+  chunk_size: 200
+  # Overlap between consecutive chunks in tokens.
+  # Only when indexing NEW (!) documents
+  chunk_overlap: 30
+
+# @see https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion
+# @see https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values
+llm:
+  # https://huggingface.co/microsoft/phi-2
+  # https://ollama.com/library/phi
+  # model: phi
+  # https://ollama.com/library/gemma:2b
+  model: gemma:2b
+  # The temperature of the model. Increasing the temperature will make the model answer more creatively.
+  # TL;DR: lower - more accurate
+  temperature: 0.9
+  # in seconds
+  request_timeout: 120.0
+  # The maximum number of token that the LLM is authorized to generate in one completion
+  max_new_tokens: 256
+  # The maximum number of context tokens for the model.
+  context_window: 3900
+  # Reduces the probability of generating nonsense. A higher value (e.g. 100) will give more diverse answers, while a lower value (e.g. 10) will be more conservative.
+  top_k: 100
+  # Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.5) will generate more focused and conservative text.
+  top_p: 0.95
+  # "Represent the question for retrieving supporting documents:"
+  query_instruction:
+    ''
+    # Represent the question for retrieving supporting documents:
+  # "Represent the document for retrieval:"
+  text_instruction: >
+    Represent the document for retrieval:
+
+# https://github.com/run-llama/llama_index/blob/main/llama-index-integrations/embeddings/llama-index-embeddings-huggingface/pyproject.toml
+embeddings:
+  model: BAAI/bge-small-en-v1.5
+
+ollama:
+  # Base URL of Ollama API
+  api: http://localhost:11434
+
+query_mode:
+  # How many documents to retrieve from vector store
+  document_count_k: 10
+  # https://docs.llamaindex.ai/en/stable/module_guides/deploying/query_engine/response_modes.html
+  #
+  # * tree_summarize - concatenate chunks and aks LLM.
+  #       Ask recursively till there is one chunk left.
+  #       Templates: response_synthesizer:summary_template
+  # * refine - Ask LLM with 1st chunk
+  #       (Template: response_synthesizer:text_qa_template).
+  #       Then add resonse to next chunk and tell LLM to refine the answer
+  #       (Template: response_synthesizer:refine_template)
+  # * compact - same as 'refine', but always concatenates as much chunks
+  #       as possible.
+  response_mode: 'tree_summarize'
+  # Additional text-filter when using response_mode=refine/compact
+  # Quite strict, so recommended False
+  structured_answer_filtering: False
+
+  # Custom prompt templates, that try to steer away from inherit LLM knowledge,
+  # and (try to) force it to use only data retrieved from vector store.
+  #
+  # @see query_mode.response_mode for explanation what is used when
+  #
+  # https://docs.llamaindex.ai/en/stable/module_guides/models/prompts.html
+  # https://docs.llamaindex.ai/en/stable/module_guides/models/prompts/usage_pattern.html
+  # https://docs.llamaindex.ai/en/stable/examples/customization/prompts/completion_prompts.html
+  summary_template: |
+    You are Genshin Impact lore and story expert.
+    Given the information below and not prior knowledge, answer the query.
+    If you don't know the answer, just say that you don't know. Use five sentences maximum and keep the answer concise.
+    ---------------------
+    {context_str}
+    ---------------------
+    Query: {query_str}
+
+  text_qa_template: |
+    You are Genshin Impact lore and story expert.
+    Given the context information below and not prior knowledge, answer the query.
+    If you don't know the answer, just say that you don't know. Use five sentences maximum and keep the answer concise.
+    ---------------------
+    {context_str}
+    ---------------------
+    Query: {query_str}
+
+  refine_template: |
+    You are Genshin Impact lore and story expert.
+    The original query is as follows: {query_str}
+    We have provided an existing answer: {existing_answer}
+    We have the opportunity to refine the existing answer (only if needed) with some more context below.
+    ------------
+    {context_msg}
+    ------------
+    Use five sentences maximum and keep the answer concise.
+    Given the new context, refine the original answer to better answer the query. If the context isn't useful, return the original answer.
+
+chat_mode:
+  # Same meaning as in 'query_mode'
+  document_count_k: 3
+  # provide previous conversation state for each user query.
+  # Measured in tokens. Should be lower than `llm.context_window`
+  # TODO currently ignored, see 'my_chat_engine.py'
+  memory: 2048
+  # https://docs.llamaindex.ai/en/stable/examples/customization/prompts/chat_prompts.html
+  system_template: ''
+  # Used in first query to LLM. Asks for rephrased question that takes previous chat messages in consideration
+  condense_template: |
+    Given the following dialogue between a user and an model, provide one way to rephrase the last question to be a standalone question.
+
+    {chat_history}
+
+    user: {question}
+  # Summarizes found paragraphs
+  context_template: |
+    You are Genshin Impact lore and story expert.
+    If you don't know the answer, just say that you don't know.
+    Use three sentences maximum and keep the answer concise.
+    The following is a conversation between a user and an AI assistant.
+    The assistant is provides details from its context.
+
+    Here are the relevant documents for the context:
+
+    {context_str}
+
+    Based on the above documents, provide a detailed answer for the user question below.
+    Question: {question}
