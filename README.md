@@ -4,13 +4,20 @@ Little playground app for retrieval-augmented generation (RAG) using [LlamaIndex
 
 I've described the whole flow in my article: ["Implementing retrieval-augmented generation with context"](https://www.sctheblog.com/blog/rag-with-context/).
 
-> TODO image
+![gh-images-context](https://github.com/Scthe/rag-chat-with-context/assets/9325337/dcb4d670-619c-48a2-ab60-c51f8d91c201)
+
+*First question is a simple one - "Who is Diluc?". Then the user asks: "Why did he leave?". It's not specified who is "he", or "what" did he leave. The AI has to infer it from the previous chat messages. After giving a reasonable answer, the sources are linked. We can also expand each source to check the original paragraph from the wiki.*
+
+![gh-images-compare](https://github.com/Scthe/rag-chat-with-context/assets/9325337/ef09ffb8-3b84-44c6-83ab-bc7d6aefb5dd)
+
+*We are asking the app to "Compare Mondstadt and Liyue". This is more of a "analytical" question. The expected answer should describe both nations, find their characteristic features, and give examples of similarities and differences. The generated answer is quite nice. I like how it gave examples of folklore and architecture.*
+
 
 ## Usage
 
 ### Install ollama to access LLM models
 
-1. Download ollama from [https://ollama.com/download](https://ollama.com/download)
+1. Download ollama from [https://ollama.com/download](https://ollama.com/download).
 2. `ollama pull gemma:2b`. Pull model file for e.g. [gemma:2b](https://ollama.com/library/gemma:2b).
 3. Verification:
    1. `ollama show gemma:2b --modelfile`. Inspect model file data.
