@@ -1,0 +1,17 @@
+# python
+__pycache__
+env
+
+# misc
+*.code-workspace
+
+# app folders
+db
+embeddings
+docs/*
+!docs/.gitkeep
+
+# my
+_references
+makefile
+
