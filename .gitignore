@@ -10,6 +10,7 @@ db
 embeddings
 docs/*
 !docs/.gitkeep
+!docs/genshin_impact_articles.xml
 
 # my
 _references
